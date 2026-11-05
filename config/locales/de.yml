@@ -53,6 +53,7 @@ de:
   text_contract_saved: Der Vertrag wurde erfolgreich gespeichert!
   text_contract_updated: Der Vertrag wurde erfolgreich aktualisiert!
   text_contract_deleted: Der Vertrag wurde erfolgreich gelöscht
+  text_invalid_rate: "Der Stundensatz muss eine Zahl größer oder gleich null sein (z. B. 37.50)."
   text_hours_over_contract: "Das vereinbarte Stundenkontingent wird um %{hours_over} Stunden überschritten"
 
   field_contract: Vertrag

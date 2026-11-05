@@ -88,7 +88,7 @@ class Contract < ActiveRecord::Base
 
   def rate_for_user(user)
     ucr = self.user_contract_rate_by_user(user)
-    ucr.nil? ? 0.0 : ucr.rate
+    (ucr.nil? || ucr.rate.nil?) ? 0.0 : ucr.rate
   end
 
   def set_user_contract_rate(user, rate)
@@ -102,7 +102,7 @@ class Contract < ActiveRecord::Base
 
   def user_contract_rate_or_default(user)
     ucr = self.user_contract_rate_by_user(user)
-    ucr.nil? ? self.hourly_rate : ucr.rate
+    (ucr.nil? || ucr.rate.nil?) ? self.hourly_rate : ucr.rate
   end
 
   # Usage:
@@ -114,7 +114,7 @@ class Contract < ActiveRecord::Base
 
   def user_project_rate_or_default(user)
     upr = self.project.user_project_rate_by_user(user)
-    upr.nil? ? self.hourly_rate : upr.rate
+    (upr.nil? || upr.rate.nil?) ? self.hourly_rate : upr.rate
   end
 
   def members_with_entries

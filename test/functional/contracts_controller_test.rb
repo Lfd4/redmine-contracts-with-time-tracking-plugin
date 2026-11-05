@@ -211,4 +211,103 @@ test "should create new contract with permission" do
           :time_entries => [[@time_entry.id]]
     assert_response 403
   end
+
+  # Regression tests for the blank-rate bug: a blank contractor rate was stored
+  # as NULL, and the contract form then crashed with a 500 (format("%#.2f", nil)).
+
+  test "should not create contract with a blank rate" do
+    Role.find(4).add_permission! :create_contracts
+    assert_no_difference(['Contract.count', 'UserContractRate.count', 'UserProjectRate.count']) do
+      post :create, :project_id => @project.identifier,
+                   :contract => { :title => "New Title",
+                                  :description => @contract.description,
+                                  :start_date => @contract.start_date,
+                                  :purchase_amount => @contract.purchase_amount,
+                                  :hourly_rate => @contract.hourly_rate,
+                                  :project_id => @project.id,
+                                  :project_contract_id => @contract.project_contract_id + 12
+                                },
+                   :rates => { @user.id => '' }
+    end
+    assert_equal l(:text_invalid_rate), flash[:error]
+    assert_nil UserContractRate.where(:rate => nil).first
+    assert_nil UserProjectRate.where(:rate => nil).first
+  end
+
+  test "should not create contract with a non-numeric rate" do
+    Role.find(4).add_permission! :create_contracts
+    assert_no_difference(['Contract.count', 'UserContractRate.count']) do
+      post :create, :project_id => @project.identifier,
+                   :contract => { :title => "New Title",
+                                  :description => @contract.description,
+                                  :start_date => @contract.start_date,
+                                  :purchase_amount => @contract.purchase_amount,
+                                  :hourly_rate => @contract.hourly_rate,
+                                  :project_id => @project.id,
+                                  :project_contract_id => @contract.project_contract_id + 12
+                                },
+                   :rates => { @user.id => '37,50' }
+    end
+    assert_equal l(:text_invalid_rate), flash[:error]
+  end
+
+  test "should create contract with a zero rate" do
+    Role.find(4).add_permission! :create_contracts
+    assert_difference('Contract.count') do
+      post :create, :project_id => @project.identifier,
+                   :contract => { :title => "New Title",
+                                  :description => @contract.description,
+                                  :start_date => @contract.start_date,
+                                  :purchase_amount => @contract.purchase_amount,
+                                  :hourly_rate => @contract.hourly_rate,
+                                  :project_id => @project.id,
+                                  :project_contract_id => @contract.project_contract_id + 12
+                                },
+                   :rates => { @user.id => '0' }
+    end
+    assert_equal 0.0, assigns(:contract).rate_for_user(@user).to_f
+  end
+
+  test "should not update contract with a blank rate" do
+    Role.find(4).add_permission! :edit_contracts
+    @contract.save
+    @project.set_user_rate(@user, 30.0)
+    put :update, :project_id => @project.id, :id => @contract.id,
+          :contract => {  :title => @contract.title,
+                          :description => @contract.description,
+                          :start_date => @contract.start_date,
+                          :purchase_amount => @contract.purchase_amount,
+                          :hourly_rate => @contract.hourly_rate,
+                          :project_id => @contract.project_id
+                        },
+          :rates => { @user.id => '' }
+    assert_redirected_to :action => "edit", :project_id => @project.id, :id => @contract.id
+    assert_equal l(:text_invalid_rate), flash[:error]
+    assert_equal 30.0, @project.reload.rate_for_user(@user).to_f
+    assert_nil UserProjectRate.where(:rate => nil).first
+  end
+
+  test "should update contract without rates" do
+    Role.find(4).add_permission! :edit_contracts
+    @contract.save
+    put :update, :project_id => @project.id, :id => @contract.id,
+          :contract => {  :title => @contract.title,
+                          :description => @contract.description,
+                          :start_date => @contract.start_date,
+                          :purchase_amount => @contract.purchase_amount,
+                          :hourly_rate => @contract.hourly_rate,
+                          :project_id => @contract.project_id
+                        }
+    assert_redirected_to :action => "show", :project_id => @project.id, :id => @contract.id
+  end
+
+  test "should get edit when a stored contract rate is NULL" do
+    Role.find(4).add_permission! :edit_contracts
+    @contract.save
+    ucr = @contract.user_contract_rates.create!(:user_id => @user.id, :rate => 10.0)
+    ucr.update_column(:rate, nil)
+    get :edit, :project_id => @project.id, :id => @contract.id
+    assert_response :success
+    assert_select "#contractor_rates"
+  end
 end

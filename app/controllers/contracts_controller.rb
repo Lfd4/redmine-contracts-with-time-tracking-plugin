@@ -41,15 +41,10 @@ class ContractsController < ApplicationController
     @contract = Contract.new(contract_params)
     rates = params[:rates]
 
-    # Ensure only positive-value rates are entered
-    if !rates.nil?
-      rates.each_pair do |user_id, rate|
-        if rate.to_f < 0
-          flash[:error] = l(:text_invalid_rate)
-          redirect_to :action => "new", :id => @contract.id
-          return
-        end
-      end
+    if invalid_rates?(rates)
+      flash[:error] = l(:text_invalid_rate)
+      redirect_to :action => "new", :id => @contract.id
+      return
     end
 
     @contract.rates = rates
@@ -85,23 +80,20 @@ class ContractsController < ApplicationController
 
   def update
     @contract = Contract.find(params[:id])
+    rates = params[:rates]
+
+    # Validate rates before saving anything, so an invalid rate leaves the contract unchanged.
+    if invalid_rates?(rates)
+      flash[:error] = l(:text_invalid_rate)
+      redirect_to :action => "edit", :id => @contract.id
+      return
+    end
+
+    # Rates are applied by Contract#apply_rates (after_save).
+    @contract.rates = rates
     if @contract.update_attributes(contract_params)
-      @rate_error = false
-      rates = params[:rates]
-      @contract.rates = params[:rates]
-      rates.each_pair do |user_id, rate|
-        if rate.to_f <= 0
-          rate_error = true
-        end
-      end
-      if @rate_error
-        flash[:error] = l(:text_invalid_rate)
-        redirect_to :action => "edit", :id => @contract.id
-      else
-        @contract.save
-        flash[:notice] = l(:text_contract_updated)
-        redirect_to :action => "show", :id => @contract.id 
-      end
+      flash[:notice] = l(:text_contract_updated)
+      redirect_to :action => "show", :id => @contract.id
     else
       flash[:error] = "* " + @contract.errors.full_messages.join("</br>* ")
       redirect_to :action => "edit", :id => @contract.id
@@ -167,6 +159,18 @@ class ContractsController < ApplicationController
   end
 
   private
+
+  # Rates arrive as {"<user_id>" => "37.50"}; each must be a number >= 0.
+  # A blank field would otherwise be stored as a NULL rate, which made the
+  # contract form crash (format("%#.2f", nil)). Non-numeric input such as
+  # "37,50" would silently be stored as 37.0, so it is rejected as well.
+  def invalid_rates?(rates)
+    return false if rates.nil?
+    rates.values.any? do |rate|
+      value = Float(rate.to_s.strip) rescue nil
+      value.nil? || value < 0
+    end
+  end
 
   def load_contractors_and_rates
     @contractors = Contract.users_for_project_and_sub_projects(@project)

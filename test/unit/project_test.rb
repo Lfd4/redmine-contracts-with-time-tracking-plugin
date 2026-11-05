@@ -107,4 +107,10 @@ class ProjectTest < ActiveSupport::TestCase
     assert_equal 37.25, @project.rate_for_user(@user)
   end
 
+  test "should return 0.0 when a stored project rate is NULL" do
+    upr = @project.user_project_rates.create!(:user_id => @user.id, :rate => 10.0)
+    upr.update_column(:rate, nil)
+    @project.reload
+    assert_equal 0.0, @project.rate_for_user(@user)
+  end
 end

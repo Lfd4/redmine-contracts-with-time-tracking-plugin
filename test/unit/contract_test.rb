@@ -180,4 +180,11 @@ class ContractTest < ActiveSupport::TestCase
     assert_equal 2.22, @contract.expenses_total
   end
 
+  test "should fall back to defaults when a stored contract rate is NULL" do
+    ucr = @contract.user_contract_rates.create!(:user_id => @user.id, :rate => 10.0)
+    ucr.update_column(:rate, nil)
+    @contract.reload
+    assert_equal @contract.hourly_rate, @contract.user_contract_rate_or_default(@user)
+    assert_equal 0.0, @contract.rate_for_user(@user)
+  end
 end

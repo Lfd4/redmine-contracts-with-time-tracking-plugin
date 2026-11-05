@@ -22,7 +22,7 @@ module Contracts
 
       def rate_for_user(user)
         upr = self.user_project_rate_by_user(user)
-        upr.nil? ? 0.0 : upr.rate
+        (upr.nil? || upr.rate.nil?) ? 0.0 : upr.rate
       end
 
       def set_user_rate(user, rate)
