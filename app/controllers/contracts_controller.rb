@@ -1,6 +1,9 @@
 class ContractsController < ApplicationController
-  before_action :find_project, :authorize, :only => [:index, :show, :new, :create, :edit, :update, :destroy, 
-                                                     :add_time_entries, :assoc_time_entries_with_contract]
+  # Unknown ids, or ids of another project's contracts/expenses: Redmine's 404 page.
+  rescue_from(ActiveRecord::RecordNotFound) { render_404 }
+
+  before_action :find_project, :authorize, :only => [:index, :show, :new, :create, :edit, :update, :destroy,
+                                                     :add_time_entries, :assoc_time_entries_with_contract, :lock]
   
   def index
     @project = Project.find(params[:project_id])
@@ -61,7 +64,7 @@ class ContractsController < ApplicationController
   end
 
   def show
-    @contract = Contract.find(params[:id])
+    @contract = @project.contracts.find(params[:id])
     @time_entries = @contract.time_entries.order("spent_on DESC")
     @members = []
     @time_entries.each { |entry| @members.append(entry.user) unless @members.include?(entry.user) }
@@ -72,14 +75,14 @@ class ContractsController < ApplicationController
   end
 
   def edit
-    @contract = Contract.find(params[:id])
+    @contract = @project.contracts.find(params[:id])
     @projects = Project.all
     @new_id = @contract.project_contract_id
     load_contractors_and_rates
   end
 
   def update
-    @contract = Contract.find(params[:id])
+    @contract = @project.contracts.find(params[:id])
     rates = plain_hash(params[:rates])
 
     # Validate rates before saving anything, so an invalid rate leaves the contract unchanged.
@@ -101,7 +104,7 @@ class ContractsController < ApplicationController
   end
 
   def destroy
-    @contract = Contract.find(params[:id])
+    @contract = @project.contracts.find(params[:id])
     if @contract.destroy
       flash[:notice] = l(:text_contract_deleted)
       if !params[:project_id].nil?
@@ -115,18 +118,21 @@ class ContractsController < ApplicationController
   end
 
   def add_time_entries
-    @contract = Contract.find(params[:id])
+    @contract = @project.contracts.find(params[:id])
     @project = @contract.project
     @time_entries = @contract.project.time_entries_for_all_descendant_projects.sort_by! { |entry| entry.spent_on }
   end
 
   def assoc_time_entries_with_contract
-    @contract = Contract.find(params[:id])
+    @contract = @project.contracts.find(params[:id])
     @project = @contract.project
     time_entries = plain_hash(params[:time_entries])
     if time_entries != nil
-      time_entries.each do |time_entry| 
-        updated_time_entry = TimeEntry.find(time_entry.first)
+      # Only time entries of the contract's project and its subprojects (the ones offered).
+      allowed = @project.time_entries_for_all_descendant_projects.index_by(&:id)
+      time_entries.each do |time_entry|
+        updated_time_entry = allowed[time_entry.first.to_i]
+        next unless updated_time_entry
         updated_time_entry.contract = @contract
         updated_time_entry.save
       end
@@ -138,7 +144,7 @@ class ContractsController < ApplicationController
   end
 
   def lock
-    @contract = Contract.find(params[:id])
+    @contract = @project.contracts.find(params[:id])
     @lock = (params[:lock] == 'true')
     if @lock
       @contract.update_attribute(:is_locked, @lock)

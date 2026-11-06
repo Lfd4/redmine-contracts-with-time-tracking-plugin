@@ -311,4 +311,51 @@ test "should create new contract with permission" do
     assert_response :success
     assert_select "#contractor_rates"
   end
+
+  # -- Access control (contracts 2.0.1-lfda.2)
+
+  test "should not lock a contract without permission" do
+    put :lock, :project_id => @project.id, :id => @contract.id, :lock => 'true'
+    assert_response 403
+    assert !@contract.reload.is_locked
+  end
+
+  test "should lock a contract with permission" do
+    Role.find(4).add_permission! :edit_contracts
+    put :lock, :project_id => @project.id, :id => @contract.id, :lock => 'true'
+    assert_response :redirect
+    assert @contract.reload.is_locked
+  end
+
+  test "should not show a contract of another project" do
+    Role.find(4).add_permission! :view_contract_details
+    other = contracts(:contract_two)
+    assert_not_equal @project.id, other.project_id
+    get :show, :project_id => @project.id, :id => other.id
+    assert_response 404
+  end
+
+  test "should not destroy a contract of another project" do
+    Role.find(4).add_permission! :delete_contracts
+    other = contracts(:contract_two)
+    assert_no_difference('Contract.count') do
+      delete :destroy, :project_id => @project.id, :id => other.id
+    end
+    assert_response 404
+  end
+
+  test "should not associate time entries of an unrelated project" do
+    Role.find(4).add_permission! :edit_contracts
+    entry = TimeEntry.new
+    entry.project = Project.find(2)
+    entry.user = User.find(2)
+    entry.author = entry.user if entry.respond_to?(:author=)
+    entry.activity = TimeEntryActivity.first
+    entry.spent_on = Date.today
+    entry.hours = 1
+    entry.save!
+    put :assoc_time_entries_with_contract, :project_id => @project.id, :id => @contract.id,
+        :time_entries => [[entry.id]]
+    assert_nil entry.reload.contract_id
+  end
 end

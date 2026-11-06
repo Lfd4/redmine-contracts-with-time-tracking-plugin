@@ -1,4 +1,7 @@
 class ExpensesController < ApplicationController
+  # Unknown ids, or ids of another project's contracts/expenses: Redmine's 404 page.
+  rescue_from(ActiveRecord::RecordNotFound) { render_404 }
+
   before_action :set_project, :authorize, only: [:new, :edit, :update, :create, :destroy]
   before_action :set_expense, only: [:edit, :update, :destroy]
 
@@ -51,7 +54,7 @@ class ExpensesController < ApplicationController
     end
 
     def set_expense
-      @expense = Expense.find(params[:id])
+      @expense = Expense.joins(:contract).where(:contracts => { :project_id => @project.id }).find(params[:id])
       if @expense.contract.is_locked
         flash[:error] = l(:text_expenses_uneditable)
         redirect_to contract_urlpath(@expense)
@@ -68,8 +71,14 @@ class ExpensesController < ApplicationController
 
     private
 
+    # contract_id must be one of this project's contracts; otherwise it is dropped and
+    # the expense fails validation (contract required).
     def expense_params
-      params.require(:expense).permit(:name, :expense_date, :amount, :contract_id, :issue_id, :description)
+      attrs = params.require(:expense).permit(:name, :expense_date, :amount, :contract_id, :issue_id, :description)
+      if attrs[:contract_id].present? && !@project.contracts.where(:id => attrs[:contract_id]).exists?
+        attrs[:contract_id] = nil
+      end
+      attrs
     end
 
 end

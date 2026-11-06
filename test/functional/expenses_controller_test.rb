@@ -118,4 +118,32 @@ class ExpensesControllerTest < ActionController::TestCase
   end
 
 
+
+  # -- Access control (contracts 2.0.1-lfda.2)
+
+  def expense_on(contract)
+    expense = Expense.new
+    expense.name = 'other'
+    expense.expense_date = Date.today
+    expense.amount = 10
+    expense.contract_id = contract.id
+    expense.save!
+    expense
+  end
+
+  test "should not edit an expense of another project's contract" do
+    Role.find(4).add_permission! :edit_expenses
+    expense = expense_on(contracts(:contract_two))
+    get :edit, :project_id => @project.id, :id => expense.id
+    assert_response 404
+  end
+
+  test "should not create an expense on another project's contract" do
+    Role.find(4).add_permission! :create_expenses
+    assert_no_difference('Expense.count') do
+      post :create, :project_id => @project.id,
+           :expense => { :name => 'x', :expense_date => '2026-01-01', :amount => '5',
+                         :contract_id => contracts(:contract_two).id }
+    end
+  end
 end
