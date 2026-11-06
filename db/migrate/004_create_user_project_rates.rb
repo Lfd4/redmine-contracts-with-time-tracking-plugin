@@ -1,4 +1,4 @@
-class CreateUserProjectRates < ActiveRecord::Migration
+class CreateUserProjectRates < (ActiveRecord::VERSION::MAJOR >= 5 ? ActiveRecord::Migration[4.2] : ActiveRecord::Migration)
   def change
     create_table :user_project_rates do |t|
       t.integer :user_id

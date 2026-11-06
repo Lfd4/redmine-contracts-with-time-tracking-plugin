@@ -23,6 +23,7 @@ require 'timelog_controller'
 class TimelogController; def rescue_action(e) raise e end; end
 
 class TimelogControllerTest < ActionController::TestCase
+  include ContractsTestHelper::LegacyRequests
   fixtures :projects, :enabled_modules, :roles, :members,
            :member_roles, :issues, :time_entries, :users,
            :trackers, :enumerations, :issue_statuses,
@@ -31,9 +32,6 @@ class TimelogControllerTest < ActionController::TestCase
   include Redmine::I18n
 
   def setup
-    @controller = TimelogController.new
-    @request    = ActionController::TestRequest.new
-    @response   = ActionController::TestResponse.new
     @contract   = contracts(:contract_three)
     @contract2  = contracts(:contract_two)
   end

@@ -18,7 +18,7 @@ class Contract < ActiveRecord::Base
   end
 
   def reset_cache!
-    update_attributes(:hours_worked => nil, :billable_amount_total => nil)
+    update(:hours_worked => nil, :billable_amount_total => nil)
   end
 
   def smart_hours_spent

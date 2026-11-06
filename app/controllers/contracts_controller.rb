@@ -1,5 +1,5 @@
 class ContractsController < ApplicationController
-  before_filter :find_project, :authorize, :only => [:index, :show, :new, :create, :edit, :update, :destroy, 
+  before_action :find_project, :authorize, :only => [:index, :show, :new, :create, :edit, :update, :destroy, 
                                                      :add_time_entries, :assoc_time_entries_with_contract]
   
   def index
@@ -39,7 +39,7 @@ class ContractsController < ApplicationController
 
   def create
     @contract = Contract.new(contract_params)
-    rates = params[:rates]
+    rates = plain_hash(params[:rates])
 
     if invalid_rates?(rates)
       flash[:error] = l(:text_invalid_rate)
@@ -80,7 +80,7 @@ class ContractsController < ApplicationController
 
   def update
     @contract = Contract.find(params[:id])
-    rates = params[:rates]
+    rates = plain_hash(params[:rates])
 
     # Validate rates before saving anything, so an invalid rate leaves the contract unchanged.
     if invalid_rates?(rates)
@@ -91,7 +91,7 @@ class ContractsController < ApplicationController
 
     # Rates are applied by Contract#apply_rates (after_save).
     @contract.rates = rates
-    if @contract.update_attributes(contract_params)
+    if @contract.update(contract_params)
       flash[:notice] = l(:text_contract_updated)
       redirect_to :action => "show", :id => @contract.id
     else
@@ -110,7 +110,7 @@ class ContractsController < ApplicationController
         redirect_to :action => "all"
       end
     else
-      redirect_to(:back)
+      redirect_to(request.referer.presence || { :action => "show", :project_id => @project.identifier, :id => @contract.id })
     end
   end
 
@@ -123,7 +123,7 @@ class ContractsController < ApplicationController
   def assoc_time_entries_with_contract
     @contract = Contract.find(params[:id])
     @project = @contract.project
-    time_entries = params[:time_entries]
+    time_entries = plain_hash(params[:time_entries])
     if time_entries != nil
       time_entries.each do |time_entry| 
         updated_time_entry = TimeEntry.find(time_entry.first)
@@ -159,6 +159,11 @@ class ContractsController < ApplicationController
   end
 
   private
+
+  # Request parameters as a plain hash (ActionController::Parameters is no Hash on Rails 5).
+  def plain_hash(value)
+    value.respond_to?(:to_unsafe_h) ? value.to_unsafe_h : value
+  end
 
   # Rates arrive as {"<user_id>" => "37.50"}; each must be a number >= 0.
   # A blank field would otherwise be stored as a NULL rate, which made the

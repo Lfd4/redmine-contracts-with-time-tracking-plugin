@@ -1,4 +1,4 @@
-class CreateExpenses < ActiveRecord::Migration
+class CreateExpenses < (ActiveRecord::VERSION::MAJOR >= 5 ? ActiveRecord::Migration[4.2] : ActiveRecord::Migration)
   def change
     create_table :expenses do |t|
       t.string :name

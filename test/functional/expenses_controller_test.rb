@@ -1,6 +1,7 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class ExpensesControllerTest < ActionController::TestCase
+  include ContractsTestHelper::LegacyRequests
   include Redmine::I18n
   # Same fixtures as ContractsControllerTest. Without :roles, :members and
   # :member_roles these tests only passed when another test class had loaded

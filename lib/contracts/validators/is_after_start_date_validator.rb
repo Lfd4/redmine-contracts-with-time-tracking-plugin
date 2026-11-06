@@ -4,7 +4,7 @@ class IsAfterStartDateValidator < ActiveModel::EachValidator
   def validate_each(record, attribute, value)
     if (value != nil) and (record.start_date != nil) 
       unless value > record.start_date
-        record.errors[attribute] << l(:text_must_come_after_start_date)
+        record.errors.add(attribute, l(:text_must_come_after_start_date))
       end
     end
   end

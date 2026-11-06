@@ -5,7 +5,7 @@ module Contracts
 	module TimelogControllerPatch
 		def self.included(base)
 	  		base.class_eval do
-	  			after_filter :check_flash_messages, :only => [:create, :update]
+	  			after_action :check_flash_messages, :only => [:create, :update]
 
 	  			def check_flash_messages
 	  				if @time_entry.flash_only_one_time_entry

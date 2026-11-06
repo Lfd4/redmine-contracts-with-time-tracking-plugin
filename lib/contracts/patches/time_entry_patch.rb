@@ -98,13 +98,13 @@ module Contracts
                 logger.error "Split time entry ran into errors"
                 logger.error new_time_entry.errors.full_messages.join("\n")
                 errors.add :contract_id, l(:text_second_time_entry_failure, :error => new_time_entry.errors.full_messages.join("\n"))
-                return false
+                return halt_save
               end
             else
               logger.error "New auto created contract ran into errors"
               logger.error new_contract.errors.full_messages.join("\n")
               errors.add :contract_id, l(:text_auto_contract_failure, :error => new_contract.errors.full_messages.join("\n"))
-              return false
+              return halt_save
             end
           else
             # Do nothing. Configuration is off or contract hours not exceeded.
@@ -114,6 +114,13 @@ module Contracts
     end
 
     module InstanceMethods
+
+      # Stop the save from a before_save callback: Rails 4.2 stops on false,
+      # Rails 5 needs throw(:abort).
+      def halt_save
+        throw(:abort) if ActiveRecord::VERSION::MAJOR >= 5
+        false
+      end
 
       def refresh_contract
         return if self.contract_id.nil?

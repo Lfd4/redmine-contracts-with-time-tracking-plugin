@@ -1,6 +1,6 @@
 class ExpensesController < ApplicationController
-  before_filter :set_project, :authorize, only: [:new, :edit, :update, :create, :destroy]
-  before_filter :set_expense, only: [:edit, :update, :destroy]
+  before_action :set_project, :authorize, only: [:new, :edit, :update, :create, :destroy]
+  before_action :set_expense, only: [:edit, :update, :destroy]
 
   def new
     @expense = Expense.new
@@ -26,7 +26,7 @@ class ExpensesController < ApplicationController
 
   def update
     respond_to do |format|
-      if @expense.update_attributes(expense_params)
+      if @expense.update(expense_params)
         format.html { redirect_to contract_urlpath(@expense), notice: l(:text_expense_updated) }
       else
         load_contracts

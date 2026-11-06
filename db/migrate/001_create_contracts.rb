@@ -1,4 +1,4 @@
-class CreateContracts < ActiveRecord::Migration
+class CreateContracts < (ActiveRecord::VERSION::MAJOR >= 5 ? ActiveRecord::Migration[4.2] : ActiveRecord::Migration)
   def change
     create_table :contracts do |t|
       t.string    :title

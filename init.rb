@@ -14,7 +14,7 @@ Redmine::Plugin.register :contracts do
   version '2.0.1-lfda.1'
   url 'https://github.com/upgradeya/redmine-contracts-with-time-tracking-plugin.git'
 
-  requires_redmine :version => '3.0'..'3.3'
+  requires_redmine :version_or_higher => '3.3'
  
   menu :application_menu, :contracts, { :controller => :contracts, :action => :all }, :caption => :label_contracts, :if => Proc.new { User.current.logged? && User.current.allowed_to?(:view_all_contracts_for_project, nil, :global => true) } 
   menu :project_menu, :contracts, { :controller => :contracts, :action => :index }, :caption => :label_contracts, :param => :project_id
@@ -36,10 +36,12 @@ Redmine::Plugin.register :contracts do
 end
 
 # Load your patches from contracts/lib/contracts/patches/
-ActionDispatch::Callbacks.to_prepare do
-  Project.send(:include, Contracts::ProjectPatch)
-  TimeEntry.send(:include, Contracts::TimeEntryPatch)
-  TimelogController.send(:include, Contracts::TimelogControllerPatch)
-  User.send(:include, Contracts::UserPatch)
+# (ActionDispatch::Callbacks.to_prepare is gone in Rails 5; Rails.configuration.to_prepare
+# works on Rails 4.2 and 5.)
+Rails.configuration.to_prepare do
+  { Project => Contracts::ProjectPatch, TimeEntry => Contracts::TimeEntryPatch,
+    TimelogController => Contracts::TimelogControllerPatch, User => Contracts::UserPatch }.each do |klass, patch|
+    klass.send(:include, patch) unless klass.included_modules.include?(patch)
+  end
   require_dependency 'contract_category'
 end
