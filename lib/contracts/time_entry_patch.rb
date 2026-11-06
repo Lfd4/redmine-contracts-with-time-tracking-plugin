@@ -1,5 +1,3 @@
-require_dependency 'time_entry'
-
 module Contracts
 
   module TimeEntryPatch

@@ -1,5 +1,3 @@
-require_dependency 'timelog_controller'
-
 module Contracts
 
 	module TimelogControllerPatch

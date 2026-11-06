@@ -1,11 +1,6 @@
-require_dependency 'contracts/hooks/hooks'
-require_dependency 'contracts/patches/time_entry_patch'
-require_dependency 'contracts/patches/timelog_controller_patch'
-require_dependency 'contracts/patches/user_patch'
-require_dependency 'contracts/patches/project_patch'
-require_dependency 'contracts/validators/is_after_agreement_date_validator'
-require_dependency 'contracts/validators/is_after_start_date_validator'
-
+# Plugin code in lib/ follows Rails' file naming (lib/contracts/project_patch.rb defines
+# Contracts::ProjectPatch), so it autoloads on every Redmine version: Redmine 3/4 put lib/
+# on the autoload path, Redmine 5+ autoload it with Zeitwerk.
 
 Redmine::Plugin.register :contracts do
   name 'Redmine Contracts With Time Tracking'
@@ -35,13 +30,21 @@ Redmine::Plugin.register :contracts do
   end
 end
 
-# Load your patches from contracts/lib/contracts/patches/
-# (ActionDispatch::Callbacks.to_prepare is gone in Rails 5; Rails.configuration.to_prepare
-# works on Rails 4.2 and 5.)
-Rails.configuration.to_prepare do
+# Apply the patches. Redmine 5+ (Rails 6+, Zeitwerk) runs init.rb itself inside
+# to_prepare, so they are applied right here; on Redmine 3/4 init.rb runs once at boot and
+# the patches go into Rails.configuration.to_prepare (ActionDispatch::Callbacks.to_prepare
+# is gone in Rails 5).
+apply_contracts_patches = lambda do
   { Project => Contracts::ProjectPatch, TimeEntry => Contracts::TimeEntryPatch,
     TimelogController => Contracts::TimelogControllerPatch, User => Contracts::UserPatch }.each do |klass, patch|
     klass.send(:include, patch) unless klass.included_modules.include?(patch)
   end
-  require_dependency 'contract_category'
+  Contracts::ContractsHookListener # registers the time entry form hook
+  ContractCategory                 # an Enumeration subclass; load it so admin lists it
+end
+
+if Rails.respond_to?(:autoloaders)
+  apply_contracts_patches.call
+else
+  Rails.configuration.to_prepare(&apply_contracts_patches)
 end

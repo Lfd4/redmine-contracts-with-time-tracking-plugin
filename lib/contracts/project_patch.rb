@@ -1,5 +1,3 @@
-require_dependency 'project'
-
 module Contracts
   module ProjectPatch
     def self.included(base)

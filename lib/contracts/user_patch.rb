@@ -1,5 +1,3 @@
-require_dependency 'user'
-
 module Contracts
 
   module UserPatch
