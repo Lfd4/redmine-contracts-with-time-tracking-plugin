@@ -49,4 +49,20 @@ class TimeEntryTest < ActiveSupport::TestCase
     assert_match /is invalid. The contract #{@contract.title} only has #{"%.2f" % @contract.hours_remaining} hours remaining. Ask your administrator to enable auto contract creation in contract settings./,
       new_time_entry.errors.messages[:hours].to_s
   end
+
+  # Production runs with automatic contract creation on; an entry without a contract
+  # raised NoMethodError (hours_remaining for nil) in create_next_contract.
+  test "saves an entry without a contract when automatic contract creation is on" do
+    Setting.plugin_contracts = { 'automatic_contract_creation' => 'true' }
+    user = users(:users_002)
+    entry = TimeEntry.new
+    entry.project = projects(:projects_001)
+    entry.user = user
+    entry.author = user if entry.respond_to?(:author=)
+    entry.activity = TimeEntryActivity.first
+    entry.spent_on = Date.today
+    entry.hours = 1
+    assert entry.save, entry.errors.full_messages.join(", ")
+    assert_nil entry.reload.contract_id
+  end
 end
