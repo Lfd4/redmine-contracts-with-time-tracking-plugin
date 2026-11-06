@@ -2,7 +2,14 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class ExpensesControllerTest < ActionController::TestCase
   include Redmine::I18n
-  fixtures :contracts, :projects, :users
+  # Same fixtures as ContractsControllerTest. Without :roles, :members and
+  # :member_roles these tests only passed when another test class had loaded
+  # them first (depends on the random test order).
+  fixtures :issues, :projects, :users, :time_entries,
+           :members, :roles, :member_roles,
+           :trackers, :issue_statuses,
+           :enumerations, :enabled_modules,
+           :contracts
 
   def setup
     Setting.plugin_contracts = {
