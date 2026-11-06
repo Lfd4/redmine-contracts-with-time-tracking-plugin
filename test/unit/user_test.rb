@@ -18,7 +18,10 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class UserTest < ActiveSupport::TestCase
-  fixtures :projects, :contracts, :time_entries, :user_project_rates, :users
+  # :members, :member_roles and :roles are needed for @project.users. Without
+  # them these tests only passed when another test class had loaded them first.
+  fixtures :projects, :contracts, :time_entries, :user_project_rates, :users,
+           :members, :member_roles, :roles
 
   def setup
     Setting.plugin_contracts = {
