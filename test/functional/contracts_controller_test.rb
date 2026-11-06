@@ -358,4 +358,18 @@ test "should create new contract with permission" do
         :time_entries => [[entry.id]]
     assert_nil entry.reload.contract_id
   end
+
+  # -- hour format (Redmine's time span format setting, contracts 2.0.1-lfda.3)
+
+  test "hours on the contract page follow the time span format" do
+    Role.find(4).add_permission! :view_contract_details
+    entry = @contract.time_entries.first || @time_entry
+    entry.update_column(:contract_id, @contract.id)
+    entry.update_column(:hours, 1.5)
+    with_settings :timespan_format => 'minutes' do
+      get :show, :project_id => @project.id, :id => @contract.id
+      assert_response :success
+      assert_includes response.body, '1:30'
+    end
+  end
 end

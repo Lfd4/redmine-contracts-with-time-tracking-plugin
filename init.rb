@@ -6,10 +6,11 @@ Redmine::Plugin.register :contracts do
   name 'Redmine Contracts With Time Tracking'
   author 'Ben Syzek, Shanti Braford, Wesley Jones'
   description 'A Redmine plugin that allows you to manage contracts and associate time-entries with those contracts.'
-  version '2.0.1-lfda.2'
+  version '2.0.1-lfda.3'
   url 'https://github.com/upgradeya/redmine-contracts-with-time-tracking-plugin.git'
 
-  requires_redmine :version_or_higher => '3.3'
+  # Hours are shown with Redmine's format_hours (time span format setting), Redmine 4.1+.
+  requires_redmine :version_or_higher => '4.1'
  
   menu :application_menu, :contracts, { :controller => :contracts, :action => :all }, :caption => :label_contracts, :if => Proc.new { User.current.logged? && User.current.allowed_to?(:view_all_contracts_for_project, nil, :global => true) } 
   menu :project_menu, :contracts, { :controller => :contracts, :action => :index }, :caption => :label_contracts, :param => :project_id
