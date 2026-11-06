@@ -1,4 +1,5 @@
 class Expense < ActiveRecord::Base
+  include Redmine::I18n # l() in validations; models no longer get it on Redmine 6
   belongs_to :contract
   belongs_to :issue
   validates_presence_of :name, :expense_date, :amount, :contract_id
