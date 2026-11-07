@@ -38,6 +38,20 @@ class ContractsControllerTest < ActionController::TestCase
     assert_not_nil assigns(:total_remaining_hours)
   end
 
+  test "index links contract and invoice with a file icon that resolves" do
+    Role.find(4).add_permission! :view_all_contracts_for_project
+    Contract.where(:project_id => @project.id).update_all(:contract_url => 'https://example.com/c.pdf',
+                                                         :invoice_url => 'https://example.com/i.pdf')
+    get :index, :project_id => @project.id
+    assert_response :success
+    assert_select 'a[href="https://example.com/c.pdf"] img', :minimum => 1
+    # Redmine 6 serves images through Propshaft (/assets/...): no /images/ path anymore.
+    css_select('a[href="https://example.com/c.pdf"] img, a[href="https://example.com/i.pdf"] img').each do |img|
+      assert_match %r{files/text}, img['src']
+      assert_no_match %r{\A/images/}, img['src']
+    end
+  end
+
   test "should not get index without permission" do
     assert !@user.roles_for_project(@project).first.permissions.include?(:view_all_contracts_for_project)
     get :index, :project_id => @project.id

@@ -60,12 +60,12 @@
         <td class="blue"><%= format_hours(contract.hours_remaining) %></td>
         <td>
           <% if !contract.contract_url.blank? %>
-            <%= link_to image_tag("/images/files/text.png"), contract.contract_url %>
+            <%= link_to image_tag("files/text.png"), contract.contract_url %>
           <% end %>
         </td>
         <td>
           <% if !contract.invoice_url.blank? %>
-            <%= link_to image_tag("/images/files/text.png"), contract.invoice_url %>
+            <%= link_to image_tag("files/text.png"), contract.invoice_url %>
           <% end %>
         </td>
         <td>

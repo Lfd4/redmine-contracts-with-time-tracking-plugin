@@ -6,7 +6,7 @@ Redmine::Plugin.register :contracts do
   name 'Redmine Contracts With Time Tracking'
   author 'Ben Syzek, Shanti Braford, Wesley Jones'
   description 'A Redmine plugin that allows you to manage contracts and associate time-entries with those contracts.'
-  version '2.0.1-lfda.3'
+  version '2.0.1-lfda.4'
   url 'https://github.com/upgradeya/redmine-contracts-with-time-tracking-plugin.git'
 
   # Hours are shown with Redmine's format_hours (time span format setting), Redmine 4.1+.
